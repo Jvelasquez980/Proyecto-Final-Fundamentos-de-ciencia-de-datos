@@ -12,7 +12,7 @@ el dataset de ventas, aplicar filtros y generar insights con IA.
 1. Clona este repositorio:
 
 ```bash
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/Jvelasquez980/Proyecto-Final-Fundamentos-de-ciencia-de-datos.git
 ```
 
 2. Entra a la carpeta del proyecto:
