@@ -10,7 +10,24 @@ from utils.data_processing import (
 
 st.set_page_config(page_title="Modulo 1 - Ingesta", layout="wide")
 
-st.title("Modulo 1 - Ingesta y Procesamiento")
+st.markdown(
+    """
+    <style>
+    .module-header {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: #667eea;
+        text-shadow: 1px 1px 2px rgba(118, 75, 162, 0.2);
+        margin-bottom: 1rem;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown('<div class="module-header">📥 Modulo 1 - Ingesta y Procesamiento</div>', unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("Sube tu archivo CSV", type=["csv"])
 

@@ -6,7 +6,24 @@ from utils.geo import STATE_TO_CODE
 
 st.set_page_config(page_title="Modulo 2 - Visualizacion", layout="wide")
 
-st.title("Modulo 2 - Visualizacion Dinamica")
+st.markdown(
+    """
+    <style>
+    .module-header {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: #667eea;
+        text-shadow: 1px 1px 2px rgba(118, 75, 162, 0.2);
+        margin-bottom: 1rem;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown('<div class="module-header">📈 Modulo 2 - Visualizacion Dinamica</div>', unsafe_allow_html=True)
 
 base_df = st.session_state.get("processed_df")
 if base_df is None:
@@ -213,8 +230,8 @@ with st.expander("Ver datos filtrados", expanded=False):
 
 st.divider()
 
-univariado, bivariado, reporte = st.tabs(
-    ["Analisis Univariado", "Analisis Bivariado", "Reporte"]
+univariado, bivariado, reporte, adicional = st.tabs(
+    ["Analisis Univariado", "Analisis Bivariado", "Reporte", "Graficos Adicionales"]
 )
 
 with univariado:
@@ -369,3 +386,171 @@ with reporte:
             st.dataframe(filtered[cat_cols].describe(), use_container_width=True)
         else:
             st.info("No hay columnas categoricas para mostrar.")
+
+with adicional:
+    st.write("Gráficos Adicionales de Análisis")
+
+    # 1. Ganancia por Categoría
+    col_1, col_2 = st.columns(2)
+    with col_1:
+        st.write("1. Ganancia por Categoría")
+        if category_col and profit_col:
+            cat_profit = filtered.groupby(category_col)[profit_col].sum().reset_index()
+            fig = px.bar(
+                cat_profit,
+                x=category_col,
+                y=profit_col,
+                title="Ganancia Acumulada por Categoría",
+                color=profit_col,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # 2. Ganancia por Segmento
+    with col_2:
+        st.write("2. Ganancia por Segmento")
+        if segment_col and profit_col:
+            seg_profit = filtered.groupby(segment_col)[profit_col].sum().reset_index()
+            fig = px.bar(
+                seg_profit,
+                x=segment_col,
+                y=profit_col,
+                title="Ganancia por Segmento",
+                color=profit_col,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # 3. Cantidad de Órdenes por Segmento
+    col_3, col_4 = st.columns(2)
+    with col_3:
+        st.write("3. Cantidad de Órdenes por Segmento")
+        if segment_col:
+            order_col_name = "Order ID" if "Order ID" in filtered.columns else None
+            if order_col_name:
+                seg_orders = filtered.groupby(segment_col)[order_col_name].nunique().reset_index()
+                seg_orders.columns = [segment_col, "Órdenes"]
+                fig = px.bar(
+                    seg_orders,
+                    x=segment_col,
+                    y="Órdenes",
+                    title="Cantidad de Órdenes por Segmento",
+                    color="Órdenes",
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+    # 4. Análisis: Descuento vs Ganancia
+    with col_4:
+        st.write("4. Descuento vs Ganancia")
+        if discount_col and profit_col:
+            fig = px.scatter(
+                filtered,
+                x=discount_col,
+                y=profit_col,
+                title="Impacto del Descuento en Ganancia",
+                trendline="ols",
+                opacity=0.6,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # 5. Top 10 Clientes por Ganancia
+    col_5, col_6 = st.columns(2)
+    with col_5:
+        st.write("5. Top 10 Clientes por Ganancia")
+        customer_col = "Customer Name" if "Customer Name" in filtered.columns else None
+        if customer_col and profit_col:
+            top_customers = (
+                filtered.groupby(customer_col)[profit_col]
+                .sum()
+                .sort_values(ascending=False)
+                .head(10)
+                .reset_index()
+            )
+            fig = px.bar(
+                top_customers,
+                x=profit_col,
+                y=customer_col,
+                orientation="h",
+                title="Top 10 Clientes por Ganancia",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # 6. Ciclo de Entrega
+    with col_6:
+        st.write("6. Ciclo de Entrega (Order Date → Ship Date)")
+        if date_col and ship_date_col:
+            temp = filtered.copy()
+            temp[date_col] = pd.to_datetime(temp[date_col], errors="coerce")
+            temp[ship_date_col] = pd.to_datetime(temp[ship_date_col], errors="coerce")
+            temp["Delivery_Days"] = (temp[ship_date_col] - temp[date_col]).dt.days
+            ship_mode_col_name = "Ship Mode" if "Ship Mode" in temp.columns else None
+            if ship_mode_col_name:
+                fig = px.box(
+                    temp,
+                    x=ship_mode_col_name,
+                    y="Delivery_Days",
+                    title="Días de Envío por Modo de Entrega",
+                    color=ship_mode_col_name,
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+    # 7. Ganancia por Región
+    col_7, col_8 = st.columns(2)
+    with col_7:
+        st.write("7. Ganancia por Región")
+        if region_col and profit_col:
+            region_profit = filtered.groupby(region_col)[profit_col].sum().reset_index()
+            fig = px.bar(
+                region_profit,
+                x=region_col,
+                y=profit_col,
+                title="Ganancia por Región",
+                color=profit_col,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # 8. Distribución de Ganancia por Categoría
+    with col_8:
+        st.write("8. Distribución de Ganancia por Categoría")
+        if category_col and profit_col:
+            fig = px.box(
+                filtered,
+                x=category_col,
+                y=profit_col,
+                title="Distribución de Ganancia por Categoría",
+                color=category_col,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # 9. Ventas por Subcategoría (Barras horizontales)
+    col_9, col_10 = st.columns(2)
+    with col_9:
+        st.write("9. Ventas por Subcategoría")
+        subcategory_col = "Sub-Category" if "Sub-Category" in filtered.columns else None
+        if subcategory_col and sales_col:
+            subcat_sales = filtered.groupby(subcategory_col)[sales_col].sum().sort_values(ascending=True).tail(15)
+            fig = px.bar(
+                x=subcat_sales.values,
+                y=subcat_sales.index,
+                orientation='h',
+                title="Top 15 Subcategorías por Ventas",
+                color=subcat_sales.values,
+                color_continuous_scale='Blues'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # 10. Heatmap: Ganancia por Segmento vs Región
+    with col_10:
+        st.write("10. Heatmap: Ganancia por Segmento vs Región")
+        if segment_col and region_col and profit_col:
+            pivot_data = filtered.pivot_table(
+                values=profit_col,
+                index=segment_col,
+                columns=region_col,
+                aggfunc="sum",
+            )
+            fig = px.imshow(
+                pivot_data,
+                title="Ganancia: Segmento vs Región",
+                text_auto=True,
+                color_continuous_scale="RdYlGn",
+            )
+            st.plotly_chart(fig, use_container_width=True)

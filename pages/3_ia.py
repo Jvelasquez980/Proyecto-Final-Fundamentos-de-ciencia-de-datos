@@ -3,7 +3,24 @@ from groq import Groq
 
 st.set_page_config(page_title="Modulo 3 - IA", layout="wide")
 
-st.title("Modulo 3 - Analista Virtual con IA")
+st.markdown(
+    """
+    <style>
+    .module-header {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: #667eea;
+        text-shadow: 1px 1px 2px rgba(118, 75, 162, 0.2);
+        margin-bottom: 1rem;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown('<div class="module-header">🤖 Modulo 3 - Analista Virtual con IA</div>', unsafe_allow_html=True)
 
 if "filtered_df" in st.session_state:
     base_df = st.session_state["filtered_df"]
