@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 
 from utils.data_processing import (
+    add_calculated_columns,
     apply_numeric_imputation,
     basic_quality_report,
     handle_outliers_iqr,
@@ -101,8 +102,18 @@ if apply_button:
         if outlier_cols:
             df_processed = handle_outliers_iqr(df_processed, outlier_cols, outlier_strategy)
 
-        st.success("Procesamiento aplicado.")
+        # Agregar columnas calculadas
+        df_processed = add_calculated_columns(df_processed)
+
+        st.success("Procesamiento aplicado. Se agregaron columnas calculadas.")
         st.subheader("Datos procesados")
+        
+        # Mostrar resumen de nuevas columnas
+        new_cols = ["Ticket Promedio", "Margen Ganancia (%)", "Descuento Dinero"]
+        existing_new_cols = [col for col in new_cols if col in df_processed.columns]
+        if existing_new_cols:
+            st.info(f"✨ Columnas calculadas agregadas: {', '.join(existing_new_cols)}")
+        
         with st.expander("Ver datos procesados", expanded=False):
             st.dataframe(df_processed.head(50), use_container_width=True)
 

@@ -230,8 +230,8 @@ with st.expander("Ver datos filtrados", expanded=False):
 
 st.divider()
 
-univariado, bivariado, reporte, adicional = st.tabs(
-    ["Analisis Univariado", "Analisis Bivariado", "Reporte", "Graficos Adicionales"]
+univariado, bivariado, reporte, adicional, columnas = st.tabs(
+    ["Analisis Univariado", "Analisis Bivariado", "Reporte", "Graficos Adicionales", "Columnas Calculadas"]
 )
 
 with univariado:
@@ -374,7 +374,7 @@ with reporte:
     st.write("Resumen estadistico")
     with st.expander("Ver resumen cuantitativo", expanded=False):
         numeric_cols = filtered.select_dtypes(include="number").columns.tolist()
-        numeric_cols = [col for col in numeric_cols if col != "Row ID"]
+        numeric_cols = [col for col in numeric_cols if col != "Row ID" and col != "Postal Code"]
         if numeric_cols:
             st.dataframe(filtered[numeric_cols].describe(), use_container_width=True)
         else:
@@ -554,3 +554,152 @@ with adicional:
                 color_continuous_scale="RdYlGn",
             )
             st.plotly_chart(fig, use_container_width=True)
+
+with columnas:
+    st.write("Análisis de Columnas Calculadas")
+
+    # Verificar disponibilidad de columnas calculadas
+    ticket_promedio = "Ticket Promedio" in filtered.columns
+    margen_ganancia = "Margen Ganancia (%)" in filtered.columns
+    descuento_dinero = "Descuento Dinero" in filtered.columns
+
+    if not (ticket_promedio or margen_ganancia or descuento_dinero):
+        st.warning("No hay columnas calculadas. Procesa los datos en el Módulo 1 primero.")
+    else:
+        # 1. Distribución del Ticket Promedio
+        col_1, col_2 = st.columns(2)
+        with col_1:
+            st.write("1. Distribución del Ticket Promedio")
+            if ticket_promedio:
+                fig = px.histogram(
+                    filtered,
+                    x="Ticket Promedio",
+                    nbins=40,
+                    title="Distribución del Precio Promedio por Item",
+                    color_discrete_sequence=["#667eea"]
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # 2. Distribución del Margen de Ganancia
+        with col_2:
+            st.write("2. Distribución del Margen de Ganancia (%)")
+            if margen_ganancia:
+                fig = px.histogram(
+                    filtered,
+                    x="Margen Ganancia (%)",
+                    nbins=40,
+                    title="Distribución del Margen de Ganancia",
+                    color_discrete_sequence=["#764ba2"]
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # 3. Scatter: Ticket Promedio vs Margen Ganancia
+        col_3, col_4 = st.columns(2)
+        with col_3:
+            st.write("3. Ticket Promedio vs Margen Ganancia")
+            if ticket_promedio and margen_ganancia:
+                fig = px.scatter(
+                    filtered,
+                    x="Ticket Promedio",
+                    y="Margen Ganancia (%)",
+                    color="Margen Ganancia (%)",
+                    hover_data=[category_col] if category_col else None,
+                    title="Relación entre Ticket Promedio y Margen",
+                    color_continuous_scale="Viridis",
+                    opacity=0.7
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # 4. Descuento en Dinero vs Margen Ganancia
+        with col_4:
+            st.write("4. Descuento (Dinero) vs Margen Ganancia")
+            if descuento_dinero and margen_ganancia:
+                fig = px.scatter(
+                    filtered,
+                    x="Descuento Dinero",
+                    y="Margen Ganancia (%)",
+                    color=category_col if category_col else "Margen Ganancia (%)",
+                    title="Impacto del Descuento en Margen de Ganancia",
+                    opacity=0.7
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # 5. Ticket Promedio por Categoría
+        col_5, col_6 = st.columns(2)
+        with col_5:
+            st.write("5. Ticket Promedio por Categoría")
+            if ticket_promedio and category_col:
+                ticket_by_cat = filtered.groupby(category_col)["Ticket Promedio"].mean().sort_values()
+                fig = px.bar(
+                    x=ticket_by_cat.values,
+                    y=ticket_by_cat.index,
+                    orientation='h',
+                    title="Ticket Promedio Promedio por Categoría",
+                    color=ticket_by_cat.values,
+                    color_continuous_scale='Blues'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # 6. Margen Ganancia Promedio por Segmento
+        with col_6:
+            st.write("6. Margen Ganancia (%) por Segmento")
+            if margen_ganancia and segment_col:
+                margen_by_seg = filtered.groupby(segment_col)["Margen Ganancia (%)"].mean().sort_values()
+                fig = px.bar(
+                    x=margen_by_seg.index,
+                    y=margen_by_seg.values,
+                    title="Margen de Ganancia Promedio por Segmento",
+                    color=margen_by_seg.values,
+                    color_continuous_scale='RdYlGn',
+                    labels={"x": segment_col, "y": "Margen (%)"}
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # 7. Box Plot: Ticket Promedio por Categoría
+        col_7, col_8 = st.columns(2)
+        with col_7:
+            st.write("7. Variabilidad del Ticket Promedio por Categoría")
+            if ticket_promedio and category_col:
+                fig = px.box(
+                    filtered,
+                    x=category_col,
+                    y="Ticket Promedio",
+                    title="Distribución del Ticket Promedio por Categoría",
+                    color=category_col
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # 8. Evolución temporal del Ticket Promedio
+        with col_8:
+            st.write("8. Evolución del Ticket Promedio (Mensual)")
+            if ticket_promedio and date_col:
+                temp = filtered.copy()
+                temp = temp.dropna(subset=[date_col, "Ticket Promedio"])
+                temp = temp.sort_values(date_col)
+                temp_monthly = (
+                    temp.groupby(pd.Grouper(key=date_col, freq="M"))["Ticket Promedio"]
+                    .mean()
+                    .reset_index()
+                )
+                fig = px.line(
+                    temp_monthly,
+                    x=date_col,
+                    y="Ticket Promedio",
+                    title="Evolución del Ticket Promedio por Mes",
+                    markers=True
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # Resumen estadístico de columnas calculadas
+        st.write("Resumen Estadístico de Columnas Calculadas")
+        with st.expander("Ver estadísticas", expanded=False):
+            calc_cols = []
+            if ticket_promedio:
+                calc_cols.append("Ticket Promedio")
+            if margen_ganancia:
+                calc_cols.append("Margen Ganancia (%)")
+            if descuento_dinero:
+                calc_cols.append("Descuento Dinero")
+            
+            if calc_cols:
+                st.dataframe(filtered[calc_cols].describe(), use_container_width=True)
